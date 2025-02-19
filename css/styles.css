@@ -1,0 +1,84 @@
+:root {
+	color-scheme: light dark;
+	--font-color: light-dark(black, white);
+	--opposite-font-color: light-dark(white, black);
+	--link-color: light-dark(#0000ee, #8c8cff);
+	--first-background-color: light-dark(white, black);
+	--second-background-color: light-dark(#e1e1e1, #1e1e1e);
+	--third-background-color: light-dark(#cacaca, #353535);
+	--fourth-background-color: light-dark(#b1b1b1, #4e4e4e);
+	--fifth-background-color: light-dark(#969696, #696969);
+	--sixth-background-color: light-dark(#7a7a7a, #858585);
+
+	--main-height: 90vh;
+	--default-transition-duration: 300ms;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+input[type="submit"] {
+	cursor: pointer;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+	appearance: textfield;
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+input[type=number] {
+	appearance: textfield;
+	-moz-appearance: textfield;
+}
+
+label.required::after {
+	content: " *";
+	color: #e32;
+	vertical-align: middle;
+}
+
+.no-text-select {
+	/* iOS Safari */
+	-webkit-touch-callout: none;
+	/* Safari */
+	-webkit-user-select: none;
+	/* Konqueror HTML */
+	-khtml-user-select: none;
+	/* Old versions of Firefox */
+	-moz-user-select: none;
+	/* Internet Explorer/Edge */
+	-ms-user-select: none;
+	/* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+	user-select: none;
+}
+
+:root {
+	--header-height: 5vh;
+}
+
+body {
+	padding: 0;
+	margin: 0;
+}
+
+header {
+	height: 5vh;
+	position: absolute;
+}
+
+body,
+main {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	height: 100%;
+	width: 100%;
+}
+
+#game-screen {
+	background-color: black;
+}
