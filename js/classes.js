@@ -13,7 +13,9 @@ class Game {
 class Tron extends Game {
 	constructor() {
 		super();
+		this.gameState = null;
 		this.players = [];
+		this.startingPoints = [];
 
 		for (let index = 0; index < PLAYER_COUNT; ++index) {
 			this.players.push(new Player(PLAYER_CONFIGS[index]));
@@ -43,18 +45,54 @@ class Tron extends Game {
 		this.screen.restore();
 	}
 
+	async calculatePolygonPoints(sides) {
+		// Calculate the center point of the window
+		const centerX = this.screen.canvas.width / 2;
+		const centerY = this.screen.canvas.height / 2;
+
+		// Calculate the general radius of the shape (just for visualization purposes)
+		const radius = Math.min(this.screen.canvas.width, this.screen.canvas.height) / 2; // Use smaller dimension
+
+		// Create an array to hold the coordinates of the points
+		let points = [];
+
+		// Calculate the angle between each point (360 degrees / number of sides)
+		const angleStep = (2 * Math.PI) / sides;
+
+		for (let i = 0; i < sides; ++i) {
+			// Calculate the angle for this point
+			const angle = angleStep * i;
+
+			// Calculate the x and y coordinates based on the angle and radius
+			const x = centerX + radius * Math.cos(angle);
+			const y = centerY + radius * Math.sin(angle);
+
+			points.push({ x: x, y: y });
+		}
+
+		return points;
+	}
+
 	loop = async (dt) => {
 		this.adjustScreen();
+		if (this.gameState === null)
+			this.startingPoints = await this.calculatePolygonPoints(this.players.length);
 		this.clearScreen();
 		// drawHeader();
 
-		//Drawing players
-		this.players.forEach(async function (player) {
+		//Handling players
+		this.players.forEach(async function (player, playerIndex) {
+			if (this.gameState === null) {
+				player.x = this.startingPoints[playerIndex].x;
+				player.y = this.startingPoints[playerIndex].y;
+			}
 			player.loop();
-		});
+		}.bind(this));
 
 		//Starting the loop again.
 		window.requestAnimationFrame(this.loop);
+
+		this.gameState = 'playing'; //Updating game state.
 	}
 }
 
