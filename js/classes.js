@@ -34,7 +34,7 @@ class Tron extends Game {
 		this.players = [];
 		this.startingPoints = [];
 
-		for (let index = 0; index < PLAYER_COUNT; ++index) {
+		for (let index = 0; index < OPTIONS.PLAYER_COUNT; ++index) {
 			this.players.push(new Player(PLAYER_CONFIGS[index]));
 		}
 

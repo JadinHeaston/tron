@@ -1,7 +1,13 @@
 "use strict"
 
 //Global variables
-var GAME_SCREEN_CONTEXT; //ctx
-var dtLastTime;
+class Options {
+	constructor() {
+		const PLAYER_COUNT = 2;
+		const LIGHTWALL_RADIUS = 40;
+		var GAME_SCREEN_CONTEXT;
+	}
+}
 
-const PLAYER_COUNT = 2;
+const OPTIONS = new Options;
+
