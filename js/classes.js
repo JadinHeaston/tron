@@ -4,9 +4,26 @@ class Game {
 	constructor() {
 		const GAME_SCREEN = document.getElementById('game-screen');
 		this.screen = GAME_SCREEN.getContext('2d');
+		this.keyManager = new KeyManager;
+
+		this.setupEventListeners();
 	}
+
 	static async startGame() {
 		new Tron;
+	}
+
+	async setupEventListeners() {
+		window.addEventListener('keydown', (event) => {
+			console.log(this.keyManager.isKeyPressed(event.key));
+			if (this.keyManager.isKeyPressed(event.key) === true)
+				return;
+
+			this.keyManager.keyDown(event.key);
+		})
+		window.addEventListener('keyup', (event) => {
+			this.keyManager.keyUp(event.key);
+		});
 	}
 }
 
@@ -53,7 +70,6 @@ class Tron extends Game {
 		// Calculate the general radius of the shape (just for visualization purposes)
 		const radius = Math.min(this.screen.canvas.width, this.screen.canvas.height) / 2; // Use smaller dimension
 
-		// Create an array to hold the coordinates of the points
 		let points = [];
 
 		// Calculate the angle between each point (360 degrees / number of sides)
@@ -101,19 +117,7 @@ class Player extends Game {
 		super();
 		this.x = 0;
 		this.y = 0;
-		this.key = null;
 		this.config = PlayerConfig;
-
-		//Binding listeners.
-		window.addEventListener('keydown', async function (event) {
-			if (this.key === event.key && this.key !== null)
-				return;
-			this.key = event.key;
-		}.bind(this))
-		window.addEventListener('keyup', async function (event) {
-			if (this.key === event.key)
-				this.key = null;
-		}.bind(this));
 	}
 
 	/**
@@ -146,20 +150,14 @@ class Player extends Game {
 	}
 
 	async move() {
-		switch (this.key) {
-			case this.config.upControl:
-				this.y -= this.config.speed;
-				break;
-			case this.config.leftControl:
-				this.x -= this.config.speed;
-				break;
-			case this.config.downControl:
-				this.y += this.config.speed;
-				break;
-			case this.config.rightControl:
-				this.x += this.config.speed;
-				break;
-		}
+		if (this.keyManager.isKeyPressed(this.config.upControl) === true)
+			this.y -= this.config.speed;
+		if (this.keyManager.isKeyPressed(this.config.leftControl) === true)
+			this.x -= this.config.speed;
+		if (this.keyManager.isKeyPressed(this.config.downControl) === true)
+			this.y += this.config.speed;
+		if (this.keyManager.isKeyPressed(this.config.rightControl) === true)
+			this.x += this.config.speed;
 	}
 
 	async draw() {
@@ -182,5 +180,26 @@ class PlayerConfig {
 		this.downControl = downControl;
 		this.rightControl = rightControl;
 
+	}
+}
+
+class KeyManager {
+	constructor() {
+		this.keys = new Set(); // A Set to store pressed keys
+	}
+
+	// Method to add a key to the set when pressed
+	keyDown(key) {
+		this.keys.add(key);
+	}
+
+	// Method to remove a key from the set when released
+	keyUp(key) {
+		this.keys.delete(key);
+	}
+
+	// Method to check if a specific key is pressed
+	isKeyPressed(key) {
+		return this.keys.has(key);
 	}
 }
