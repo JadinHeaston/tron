@@ -73,7 +73,8 @@ class Player extends Game {
 			this.key = event.key;
 		}.bind(this))
 		window.addEventListener('keyup', async function (event) {
-			this.key = null;
+			if (this.key === event.key)
+				this.key = null;
 		}.bind(this));
 	}
 
