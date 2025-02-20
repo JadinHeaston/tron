@@ -2,7 +2,8 @@
 
 const PLAYER_CONFIGS = [
 	new PlayerConfig(0, 'red', 'w', 'a', 's', 'd'),
-	new PlayerConfig(1, 'blue')
+	new PlayerConfig(1, 'blue', 'w', 'a', 's', 'd'),
+	new PlayerConfig(2, 'coral', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight')
 ];
 
 
