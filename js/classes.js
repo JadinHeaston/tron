@@ -128,6 +128,10 @@ class Player extends Game {
 		this.config.speed = (this.screen.canvas.width / 120);
 	}
 
+	async handleCollision() {
+		this.wallCollision();
+	}
+
 	async wallCollision() {
 		//X
 		if ((this.x + this.config.radius) >= this.screen.canvas.width)
@@ -145,7 +149,6 @@ class Player extends Game {
 	async loop() {
 		this.adjustConfiguration();
 		this.move();
-		this.wallCollision();
 		this.draw();
 	}
 
@@ -158,6 +161,8 @@ class Player extends Game {
 			this.y += this.config.speed;
 		if (this.keyManager.isKeyPressed(this.config.rightControl) === true)
 			this.x += this.config.speed;
+
+		this.handleCollision();
 	}
 
 	async draw() {
