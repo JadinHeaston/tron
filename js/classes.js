@@ -85,10 +85,24 @@ class Player extends Game {
 		this.config.speed = (this.screen.canvas.width / 120);
 	}
 
+	async wallCollision() {
+		//X
+		if ((this.x + this.config.radius) >= this.screen.canvas.width)
+			this.x = (this.screen.canvas.width - this.config.radius);
+		else if (this.x - this.config.radius <= 0)
+			this.x = this.config.radius;
+
+		//Y
+		if ((this.y + this.config.radius) >= this.screen.canvas.height)
+			this.y = (this.screen.canvas.height - this.config.radius);
+		else if (this.y - this.config.radius <= 0)
+			this.y = this.config.radius;
+	}
+
 	async loop() {
 		this.adjustConfiguration();
 		this.move();
-		// this.wallCollision();
+		this.wallCollision();
 		this.draw();
 	}
 
