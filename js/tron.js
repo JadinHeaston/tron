@@ -131,7 +131,6 @@ class Tron {
 	}
 
 	lightwallExistInArea(playerID, coordinates, radius) {
-		// console.log(coordinates.x - (radius * 2));
 		return this.lightwalls.filter(function (lightwall) {
 			if (playerID === lightwall.ownerID)
 				return false;
@@ -173,11 +172,7 @@ class Player {
 	lightWallCollision() {
 		const playerAreaRadius = ((TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS) * 2);
 		const playerCenter = new Coordinates((this.coordinates.x - (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS)), (this.coordinates.y - (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS)));
-		// console.log(this.coordinates, playerCenter);
 		const lightwallCollision = TRON.lightwallExistInArea(this.id, playerCenter, playerAreaRadius);
-
-		console.log(lightwallCollision);
-
 
 		if (lightwallCollision === true) {
 			TRON.screen.fillStyle = "purple";
