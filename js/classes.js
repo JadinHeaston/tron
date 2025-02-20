@@ -2,6 +2,8 @@
 
 class Game {
 	constructor() {
+		this.gameState = null;
+
 		const GAME_SCREEN = document.getElementById('game-screen');
 		this.screen = GAME_SCREEN.getContext('2d');
 		this.keyManager = new KeyManager;
@@ -29,7 +31,6 @@ class Game {
 class Tron extends Game {
 	constructor() {
 		super();
-		this.gameState = null;
 		this.players = [];
 		this.startingPoints = [];
 
