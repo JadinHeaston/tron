@@ -1,18 +1,27 @@
 "use strict"
+var TRON;
 
-class Game {
+class Tron {
 	constructor() {
 		this.gameState = null;
+		this.config = new TronConfig;
+
+		this.players = [];
+		this.startingPoints = [];
+		this.lightwallPoints = [];
 
 		const GAME_SCREEN = document.getElementById('game-screen');
 		this.screen = GAME_SCREEN.getContext('2d');
+
 		this.keyManager = new KeyManager;
-
 		this.setupEventListeners();
-	}
 
-	static async startGame() {
-		new Tron;
+		for (let index = 0; index < this.config.PLAYER_COUNT; ++index) {
+			this.players.push(new Player(PLAYER_CONFIGS[index]));
+		}
+
+		//Beginning game loop.
+		window.requestAnimationFrame(this.loop);
 	}
 
 	async setupEventListeners() {
@@ -25,21 +34,6 @@ class Game {
 		window.addEventListener('keyup', (event) => {
 			this.keyManager.keyUp(event.key);
 		});
-	}
-}
-
-class Tron extends Game {
-	constructor() {
-		super();
-		this.players = [];
-		this.startingPoints = [];
-
-		for (let index = 0; index < OPTIONS.PLAYER_COUNT; ++index) {
-			this.players.push(new Player(PLAYER_CONFIGS[index]));
-		}
-
-		//Beginning game loop.
-		window.requestAnimationFrame(this.loop);
 	}
 
 	async adjustScreen() {
@@ -70,7 +64,7 @@ class Tron extends Game {
 		// Calculate the general radius of the shape (just for visualization purposes)
 		const radius = Math.min(this.screen.canvas.width, this.screen.canvas.height) / 2; // Use smaller dimension
 
-		let points = [];
+		var points = [];
 
 		// Calculate the angle between each point (360 degrees / number of sides)
 		const angleStep = (2 * Math.PI) / sides;
@@ -112,9 +106,8 @@ class Tron extends Game {
 	}
 }
 
-class Player extends Game {
+class Player {
 	constructor(PlayerConfig) {
-		super();
 		this.x = 0;
 		this.y = 0;
 		this.config = PlayerConfig;
@@ -124,24 +117,29 @@ class Player extends Game {
 	 * Adjusting size based on screen size. (Responsive)
 	 */
 	async adjustConfiguration() {
-		this.config.radius = (this.screen.canvas.width / 96);
-		this.config.speed = (this.screen.canvas.width / 120);
+		this.config.radius = (TRON.screen.canvas.width / TRON.config.PLAYER_RADIUS_FACTOR);
+		this.config.speed = (TRON.screen.canvas.width / TRON.config.PLAYER_SPEED_FACTOR);
 	}
 
 	async handleCollision() {
 		this.wallCollision();
+		this.lightWallCollision();
+	}
+
+	async lightWallCollision() {
+		const playerAreaRange = this.config.radius + TRON.config.LIGHTWALL_RADIUS;
 	}
 
 	async wallCollision() {
 		//X
-		if ((this.x + this.config.radius) >= this.screen.canvas.width)
-			this.x = (this.screen.canvas.width - this.config.radius);
+		if ((this.x + this.config.radius) >= TRON.screen.canvas.width)
+			this.x = (TRON.screen.canvas.width - this.config.radius);
 		else if (this.x - this.config.radius <= 0)
 			this.x = this.config.radius;
 
 		//Y
-		if ((this.y + this.config.radius) >= this.screen.canvas.height)
-			this.y = (this.screen.canvas.height - this.config.radius);
+		if ((this.y + this.config.radius) >= TRON.screen.canvas.height)
+			this.y = (TRON.screen.canvas.height - this.config.radius);
 		else if (this.y - this.config.radius <= 0)
 			this.y = this.config.radius;
 	}
@@ -153,10 +151,10 @@ class Player extends Game {
 	}
 
 	async move() {
-		const upControl = this.keyManager.isKeyPressed(this.config.upControl);
-		const leftControl = this.keyManager.isKeyPressed(this.config.leftControl);
-		const downControl = this.keyManager.isKeyPressed(this.config.downControl);
-		const rightControl = this.keyManager.isKeyPressed(this.config.rightControl);
+		const upControl = TRON.keyManager.isKeyPressed(this.config.upControl);
+		const leftControl = TRON.keyManager.isKeyPressed(this.config.leftControl);
+		const downControl = TRON.keyManager.isKeyPressed(this.config.downControl);
+		const rightControl = TRON.keyManager.isKeyPressed(this.config.rightControl);
 
 		const timestamps = {
 			upControl: upControl ? upControl : -1,
@@ -185,10 +183,10 @@ class Player extends Game {
 	}
 
 	async draw() {
-		this.screen.beginPath();
-		this.screen.arc(this.x, this.y, this.config.radius, 0, 2 * Math.PI);
-		this.screen.fillStyle = this.config.color
-		this.screen.fill();
+		TRON.screen.beginPath();
+		TRON.screen.arc(this.x, this.y, this.config.radius, 0, 2 * Math.PI);
+		TRON.screen.fillStyle = this.config.color
+		TRON.screen.fill();
 	}
 }
 
@@ -229,3 +227,21 @@ class KeyManager {
 		return this.keys.get(key).time;
 	}
 }
+
+
+
+
+
+
+//Runtime!
+
+const PLAYER_CONFIGS = [
+	new PlayerConfig(0, 'red', 'w', 'a', 's', 'd'),
+	// new PlayerConfig(1, 'blue', 'w', 'a', 's', 'd'),
+	new PlayerConfig(2, 'coral', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight')
+];
+
+//Game
+document.addEventListener("DOMContentLoaded", async function () {
+	TRON = new Tron;
+});

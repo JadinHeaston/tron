@@ -1,0 +1,8 @@
+"use strict"
+
+class TronConfig {
+	PLAYER_COUNT = 2;
+	PLAYER_RADIUS_FACTOR = 96;
+	PLAYER_SPEED_FACTOR = 120;
+	LIGHTWALL_RADIUS = 40;
+}
