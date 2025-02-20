@@ -80,5 +80,5 @@ main {
 }
 
 #game-screen {
-	background-color: black;
+	background-color: var(--opposite-font-color);
 }
