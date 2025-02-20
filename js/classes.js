@@ -15,8 +15,7 @@ class Game {
 
 	async setupEventListeners() {
 		window.addEventListener('keydown', (event) => {
-			console.log(this.keyManager.isKeyPressed(event.key));
-			if (this.keyManager.isKeyPressed(event.key) === true)
+			if (this.keyManager.isKeyPressed(event.key) !== false)
 				return;
 
 			this.keyManager.keyDown(event.key);
@@ -153,14 +152,33 @@ class Player extends Game {
 	}
 
 	async move() {
-		if (this.keyManager.isKeyPressed(this.config.upControl) === true)
-			this.y -= this.config.speed;
-		if (this.keyManager.isKeyPressed(this.config.leftControl) === true)
-			this.x -= this.config.speed;
-		if (this.keyManager.isKeyPressed(this.config.downControl) === true)
-			this.y += this.config.speed;
-		if (this.keyManager.isKeyPressed(this.config.rightControl) === true)
-			this.x += this.config.speed;
+		const upControl = this.keyManager.isKeyPressed(this.config.upControl);
+		const leftControl = this.keyManager.isKeyPressed(this.config.leftControl);
+		const downControl = this.keyManager.isKeyPressed(this.config.downControl);
+		const rightControl = this.keyManager.isKeyPressed(this.config.rightControl);
+
+		const timestamps = {
+			upControl: upControl ? upControl : -1,
+			leftControl: leftControl ? leftControl : -1,
+			downControl: downControl ? downControl : -1,
+			rightControl: rightControl ? rightControl : -1
+		};
+
+		// Get the key with the most recent timestamp
+		const mostRecentControl = Object.keys(timestamps).reduce((a, b) =>
+			timestamps[a] > timestamps[b] ? a : b
+		);
+
+		if (timestamps[mostRecentControl] > -1) {
+			if (mostRecentControl === 'upControl')
+				this.y -= this.config.speed;
+			else if (mostRecentControl === 'leftControl')
+				this.x -= this.config.speed;
+			else if (mostRecentControl === 'downControl')
+				this.y += this.config.speed;
+			else if (mostRecentControl === 'rightControl')
+				this.x += this.config.speed;
+		}
 
 		this.handleCollision();
 	}
@@ -190,21 +208,23 @@ class PlayerConfig {
 
 class KeyManager {
 	constructor() {
-		this.keys = new Set(); // A Set to store pressed keys
+		this.keys = new Map(); // A Set to store pressed keys
 	}
 
-	// Method to add a key to the set when pressed
 	keyDown(key) {
-		this.keys.add(key);
+		const timestamp = Date.now();
+		this.keys.set(key, { time: timestamp });
 	}
 
-	// Method to remove a key from the set when released
 	keyUp(key) {
 		this.keys.delete(key);
 	}
 
-	// Method to check if a specific key is pressed
+	// Method to check if a specific key is pressed. Returns the time the key was pressed if true.
 	isKeyPressed(key) {
-		return this.keys.has(key);
+		if (this.keys.has(key) === false)
+			return false;
+
+		return this.keys.get(key).time;
 	}
 }
