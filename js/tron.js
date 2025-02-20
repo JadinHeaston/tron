@@ -4,11 +4,12 @@ var TRON;
 class Tron {
 	constructor() {
 		this.gameState = null;
-		this.config = new TronConfig;
+		this.config = new TronConfig; //User Configurable Options
+		this.globals = new TronGlobal; //Global changing variables
 
 		this.players = [];
 		this.startingPoints = [];
-		this.lightwallPoints = [];
+		this.lightwalls = [];
 
 		const GAME_SCREEN = document.getElementById('game-screen');
 		this.screen = GAME_SCREEN.getContext('2d');
@@ -17,26 +18,39 @@ class Tron {
 		this.setupEventListeners();
 
 		for (let index = 0; index < this.config.PLAYER_COUNT; ++index) {
-			this.players.push(new Player(PLAYER_CONFIGS[index]));
+			this.players.push(new Player(index, PLAYER_CONFIGS[index]));
 		}
+
+		//Initial setting variables.
+		this.adjustScreen();
+		this.adjustGlobals();
+
+		if (this.gameState === null)
+			this.startingPoints = this.calculatePolygonPoints(this.players.length);
 
 		//Beginning game loop.
 		window.requestAnimationFrame(this.loop);
 	}
 
-	async setupEventListeners() {
-		window.addEventListener('keydown', (event) => {
+	setupEventListeners() {
+		window.addEventListener('keydown', async (event) => {
 			if (this.keyManager.isKeyPressed(event.key) !== false)
 				return;
 
 			this.keyManager.keyDown(event.key);
 		})
-		window.addEventListener('keyup', (event) => {
+		window.addEventListener('keyup', async (event) => {
 			this.keyManager.keyUp(event.key);
 		});
 	}
 
-	async adjustScreen() {
+	adjustGlobals() {
+		this.globals.PLAYER_RADIUS = (this.screen.canvas.width / this.config.PLAYER_RADIUS_FACTOR);
+		this.globals.PLAYER_SPEED = (this.screen.canvas.width / this.config.PLAYER_SPEED_FACTOR);
+		this.globals.LIGHTWALL_RADIUS = this.globals.PLAYER_RADIUS * 0.5;
+	}
+
+	adjustScreen() {
 		//Setting width and height, in case of resizing.
 		if (this.screen.canvas.width !== window.innerWidth)
 			this.screen.canvas.width = window.innerWidth;
@@ -44,7 +58,7 @@ class Tron {
 			this.screen.canvas.height = window.innerHeight;
 	}
 
-	async clearScreen() {
+	clearScreen() {
 		// Store the current transformation matrix
 		this.screen.save();
 
@@ -56,7 +70,7 @@ class Tron {
 		this.screen.restore();
 	}
 
-	async calculatePolygonPoints(sides) {
+	calculatePolygonPoints(sides) {
 		// Calculate the center point of the window
 		const centerX = this.screen.canvas.width / 2;
 		const centerY = this.screen.canvas.height / 2;
@@ -83,20 +97,22 @@ class Tron {
 		return points;
 	}
 
-	loop = async (dt) => {
-		this.adjustScreen();
-		if (this.gameState === null)
-			this.startingPoints = await this.calculatePolygonPoints(this.players.length);
+	loop = (dt) => {
 		this.clearScreen();
 		// drawHeader();
 
 		//Handling players
-		this.players.forEach(async function (player, playerIndex) {
+		this.players.forEach(async function (player, playerID) {
 			if (this.gameState === null) {
-				player.x = this.startingPoints[playerIndex].x;
-				player.y = this.startingPoints[playerIndex].y;
+				player.coordinates.x = this.startingPoints[playerID].x;
+				player.coordinates.y = this.startingPoints[playerID].y;
 			}
 			player.loop();
+		}.bind(this));
+
+		//Handling lightwalls
+		this.lightwalls.forEach(async function (lightwall, lightwallIndex) {
+			lightwall.draw();
 		}.bind(this));
 
 		//Starting the loop again.
@@ -104,53 +120,103 @@ class Tron {
 
 		this.gameState = 'playing'; //Updating game state.
 	}
+
+	lightwallExistsAtPoint(playerID, coordinates) {
+		return this.lightwalls.filter(function (lightwall) {
+			if (playerID === lightwall.ownerID)
+				return false;
+			coordinates.x == lightwall.coordinates.x
+				&& coordinates.y == lightwall.coordinates.y
+		}).length > 0;
+	}
+
+	lightwallExistInArea(playerID, coordinates, radius) {
+		// console.log(coordinates.x - (radius * 2));
+		return this.lightwalls.filter(function (lightwall) {
+			if (playerID === lightwall.ownerID)
+				return false;
+
+			// Calculate the distance between the coordinates and the lightwall's coordinates
+			const dx = coordinates.x - lightwall.coordinates.x;
+			const dy = coordinates.y - lightwall.coordinates.y;
+
+			// Calculate the Euclidean distance
+			const distance = Math.sqrt(dx * dx + dy * dy);
+
+			// Check if the lightwall is within the radius
+			return distance <= radius;
+		}).length > 0;
+	}
 }
 
 class Player {
-	constructor(PlayerConfig) {
-		this.x = 0;
-		this.y = 0;
+	constructor(id, PlayerConfig) {
+		this.id = id;
+		this.coordinates = new Coordinates(0, 0);
 		this.config = PlayerConfig;
+		//Stores how far was moved in the last loop.
+		this.lastDistanceX;
+		this.lastDistanceY;
 	}
 
 	/**
 	 * Adjusting size based on screen size. (Responsive)
 	 */
-	async adjustConfiguration() {
-		this.config.radius = (TRON.screen.canvas.width / TRON.config.PLAYER_RADIUS_FACTOR);
-		this.config.speed = (TRON.screen.canvas.width / TRON.config.PLAYER_SPEED_FACTOR);
+	adjustConfiguration() {
 	}
 
-	async handleCollision() {
+	handleCollision() {
 		this.wallCollision();
 		this.lightWallCollision();
 	}
 
-	async lightWallCollision() {
-		const playerAreaRange = this.config.radius + TRON.config.LIGHTWALL_RADIUS;
+	lightWallCollision() {
+		const playerAreaRadius = ((TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS) * 2);
+		const playerCenter = new Coordinates((this.coordinates.x - (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS)), (this.coordinates.y - (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS)));
+		// console.log(this.coordinates, playerCenter);
+		const lightwallCollision = TRON.lightwallExistInArea(this.id, playerCenter, playerAreaRadius);
+
+		console.log(lightwallCollision);
+
+
+		if (lightwallCollision === true) {
+			TRON.screen.fillStyle = "purple";
+			TRON.screen.fillRect(0, 0, TRON.screen.width, TRON.screen.height);
+		}
+		TRON.screen.rect(playerCenter.x, playerCenter.y, playerAreaRadius, playerAreaRadius);
+		TRON.screen.strokeStyle = "green";
+		TRON.screen.stroke();
 	}
 
-	async wallCollision() {
+	wallCollision() {
 		//X
-		if ((this.x + this.config.radius) >= TRON.screen.canvas.width)
-			this.x = (TRON.screen.canvas.width - this.config.radius);
-		else if (this.x - this.config.radius <= 0)
-			this.x = this.config.radius;
+		if ((this.coordinates.x + TRON.globals.PLAYER_RADIUS) >= TRON.screen.canvas.width)
+			this.coordinates.x = (TRON.screen.canvas.width - TRON.globals.PLAYER_RADIUS);
+		else if (this.coordinates.x - TRON.globals.PLAYER_RADIUS <= 0)
+			this.coordinates.x = TRON.globals.PLAYER_RADIUS;
 
 		//Y
-		if ((this.y + this.config.radius) >= TRON.screen.canvas.height)
-			this.y = (TRON.screen.canvas.height - this.config.radius);
-		else if (this.y - this.config.radius <= 0)
-			this.y = this.config.radius;
+		if ((this.coordinates.y + TRON.globals.PLAYER_RADIUS) >= TRON.screen.canvas.height)
+			this.coordinates.y = (TRON.screen.canvas.height - TRON.globals.PLAYER_RADIUS);
+		else if (this.coordinates.y - TRON.globals.PLAYER_RADIUS <= 0)
+			this.coordinates.y = TRON.globals.PLAYER_RADIUS;
 	}
 
-	async loop() {
-		this.adjustConfiguration();
+	loop() {
+		// this.adjustConfiguration();
 		this.move();
+		this.handleCollision();
+		this.createLightwallPoint();
 		this.draw();
 	}
 
-	async move() {
+	createLightwallPoint() {
+		if (TRON.lightwallExistsAtPoint(this.id, this.coordinates) === true)
+			return;
+		TRON.lightwalls.push(new Lightwall(this.id, this.config, this.coordinates));
+	}
+
+	move() {
 		const upControl = TRON.keyManager.isKeyPressed(this.config.upControl);
 		const leftControl = TRON.keyManager.isKeyPressed(this.config.leftControl);
 		const downControl = TRON.keyManager.isKeyPressed(this.config.downControl);
@@ -169,39 +235,68 @@ class Player {
 		);
 
 		if (timestamps[mostRecentControl] > -1) {
-			if (mostRecentControl === 'upControl')
-				this.y -= this.config.speed;
-			else if (mostRecentControl === 'leftControl')
-				this.x -= this.config.speed;
-			else if (mostRecentControl === 'downControl')
-				this.y += this.config.speed;
-			else if (mostRecentControl === 'rightControl')
-				this.x += this.config.speed;
+			if (mostRecentControl === 'upControl') {
+				this.coordinates.y -= TRON.globals.PLAYER_SPEED;
+				this.lastDistanceX = 0;
+				this.lastDistanceY = -TRON.globals.PLAYER_SPEED;
+			}
+			else if (mostRecentControl === 'leftControl') {
+				this.coordinates.x -= TRON.globals.PLAYER_SPEED;
+				this.lastDistanceX = -TRON.globals.PLAYER_SPEED;
+				this.lastDistanceY = 0;
+			}
+			else if (mostRecentControl === 'downControl') {
+				this.coordinates.y += TRON.globals.PLAYER_SPEED;
+				this.lastDistanceX = 0;
+				this.lastDistanceY = TRON.globals.PLAYER_SPEED;
+			}
+			else if (mostRecentControl === 'rightControl') {
+				this.coordinates.x += TRON.globals.PLAYER_SPEED;
+				this.lastDistanceX = TRON.globals.PLAYER_SPEED;
+				this.lastDistanceY = 0;
+			}
 		}
-
-		this.handleCollision();
 	}
 
-	async draw() {
+	draw() {
 		TRON.screen.beginPath();
-		TRON.screen.arc(this.x, this.y, this.config.radius, 0, 2 * Math.PI);
+		TRON.screen.arc(this.coordinates.x, this.coordinates.y, TRON.globals.PLAYER_RADIUS, 0, 2 * Math.PI);
 		TRON.screen.fillStyle = this.config.color
 		TRON.screen.fill();
 	}
 }
 
 class PlayerConfig {
-	constructor(id, color, upControl, leftControl, downControl, rightControl) {
-		this.id = id;
+	constructor(color, upControl, leftControl, downControl, rightControl) {
 		this.color = color;
-		this.radius; //Dynamic based on screen size.
-		this.speed; //Dynamic based on screen size.
 		this.score;
 		this.upControl = upControl;
 		this.leftControl = leftControl;
 		this.downControl = downControl;
 		this.rightControl = rightControl;
+	}
+}
 
+class Lightwall {
+	constructor(ownerID, playerConfig, coordinates) {
+		this.ownerID = ownerID;
+		this.playerConfig = playerConfig;
+		this.coordinates = new Coordinates(coordinates.x, coordinates.y);
+	}
+
+	/**
+	 * Adjusting size based on screen size. (Responsive)
+	 */
+	adjustConfiguration() {
+
+	}
+
+	draw() {
+		// this.adjustConfiguration();
+		TRON.screen.beginPath();
+		TRON.screen.rect(this.coordinates.x - (TRON.globals.LIGHTWALL_RADIUS / 2), this.coordinates.y - (TRON.globals.LIGHTWALL_RADIUS / 2), TRON.globals.LIGHTWALL_RADIUS, TRON.globals.LIGHTWALL_RADIUS);
+		TRON.screen.fillStyle = this.playerConfig.color
+		TRON.screen.fill();
 	}
 }
 
@@ -228,17 +323,25 @@ class KeyManager {
 	}
 }
 
+class Coordinates {
+	constructor(x, y) {
+		this.x = Math.trunc(x);
+		this.y = Math.trunc(y);
+	}
+}
 
-
-
-
+class TronGlobal {
+	PLAYER_RADIUS;
+	PLAYER_SPEED;
+	LIGHTWALL_RADIUS;
+}
 
 //Runtime!
 
 const PLAYER_CONFIGS = [
-	new PlayerConfig(0, 'red', 'w', 'a', 's', 'd'),
+	new PlayerConfig('red', 'w', 'a', 's', 'd'),
 	// new PlayerConfig(1, 'blue', 'w', 'a', 's', 'd'),
-	new PlayerConfig(2, 'coral', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight')
+	new PlayerConfig('coral', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight')
 ];
 
 //Game
