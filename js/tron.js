@@ -99,7 +99,7 @@ class Tron {
 		this.screen.restore();
 	}
 
-	calculatePolygonPoints(sides) { // Add spawnMargin parameter
+	calculatePolygonPoints(sides) {
 		const centerX = this.screen.canvas.width / 2;
 		const centerY = this.screen.canvas.height / 2;
 
