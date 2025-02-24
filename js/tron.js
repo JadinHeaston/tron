@@ -9,7 +9,6 @@ class Tron {
 
 		this.players = [];
 		this.startingPoints = [];
-		this.lightwalls = [];
 
 		const GAME_SCREEN = document.getElementById('game-screen');
 		this.screen = GAME_SCREEN.getContext('2d');
@@ -17,37 +16,67 @@ class Tron {
 		this.keyManager = new KeyManager;
 		this.setupEventListeners();
 
-		for (let index = 0; index < this.config.PLAYER_COUNT; ++index) {
-			this.players.push(new Player(index, PLAYER_CONFIGS[index]));
-		}
-
 		//Initial setting variables.
 		this.adjustScreen();
 		this.adjustGlobals();
 
-		if (this.gameState === null)
-			this.startingPoints = this.calculatePolygonPoints(this.players.length);
+		this.gameState = 'start-screen'; //Starting game on the start screen.
 
 		//Beginning game loop.
 		window.requestAnimationFrame(this.loop);
 	}
 
+	initializeGameState() {
+		this.initializePlayers();
+
+		this.initializeRound(); //Starting first round.
+	}
+
+	initializePlayers() {
+		for (let index = 0; index < this.config.PLAYER_COUNT; ++index) {
+			this.players.push(new Player(index, PLAYER_CONFIGS[index]));
+		}
+	}
+
+	initializeStartingPositions() {
+		this.startingPoints = this.calculatePolygonPoints(this.players.length);
+		this.players.forEach(async function (player, playerID) {
+			player.coordinates = new Coordinates(this.startingPoints[playerID].x, this.startingPoints[playerID].y);
+		}.bind(this));
+	}
+
+	initializeRound() {
+		this.initializeStartingPositions();
+		this.gameState = 'playing';
+	}
+
 	setupEventListeners() {
-		window.addEventListener('keydown', async (event) => {
-			if (this.keyManager.isKeyPressed(event.key) !== false)
+		window.addEventListener('keydown', async function (event) {
+			if (TRON.gameState !== 'playing')
 				return;
 
-			this.keyManager.keyDown(event.key);
+			else if (TRON.keyManager.isKeyPressed(event.key) !== false)
+				return;
+
+			TRON.keyManager.keyDown(event.key);
 		})
-		window.addEventListener('keyup', async (event) => {
-			this.keyManager.keyUp(event.key);
+		window.addEventListener('keyup', async function (event) {
+			if (TRON.gameState !== 'playing')
+				return;
+			TRON.keyManager.keyUp(event.key);
+		});
+
+		//Listening to menu buttons
+		document.getElementById('start-game').addEventListener('click', async function () {
+			document.getElementById('game-start-screen').style.display = 'none';
+			TRON.initializeGameState();
 		});
 	}
 
 	adjustGlobals() {
-		this.globals.PLAYER_RADIUS = (this.screen.canvas.width / this.config.PLAYER_RADIUS_FACTOR);
-		this.globals.PLAYER_SPEED = (this.screen.canvas.width / this.config.PLAYER_SPEED_FACTOR);
-		this.globals.LIGHTWALL_RADIUS = this.globals.PLAYER_RADIUS * 0.5;
+		this.globals.PLAYER_RADIUS = Math.trunc((this.screen.canvas.width / this.config.PLAYER_RADIUS_FACTOR));
+		this.globals.PLAYER_SPEED = Math.trunc((this.screen.canvas.width / this.config.PLAYER_SPEED_FACTOR));
+		this.globals.LIGHTWALL_RADIUS = Math.trunc(this.globals.PLAYER_SPEED * 1.1); //Adding slight padding to "connect" the points for a smooth wall.
 	}
 
 	adjustScreen() {
@@ -99,21 +128,34 @@ class Tron {
 
 	loop = (dt) => {
 		this.clearScreen();
+
+		if (this.gameState === 'playing') {
+			this.playing();
+		}
+
+		//Starting the loop again.
+		window.requestAnimationFrame(this.loop);
+	}
+
+	playing() {
 		// drawHeader();
 
 		//Handling players
-		this.players.forEach(async function (player, playerID) {
-			if (this.gameState === null) {
-				player.coordinates.x = this.startingPoints[playerID].x;
-				player.coordinates.y = this.startingPoints[playerID].y;
-			}
+		this.players.forEach(function (player, playerID) {
 			player.loop();
+			if (player.state === 'collided') {
+				if (player.lives > 0)
+					TRON.gameState = 'round-end';
+				else
+					TRON.gameState = 'game-end';
+			}
+
+			//Handling lightwalls
+			player.lightwalls.forEach(function (lightwall, lightwallIndex) {
+				lightwall.draw();
+			}.bind(this));
 		}.bind(this));
 
-		//Handling lightwalls
-		this.lightwalls.forEach(async function (lightwall, lightwallIndex) {
-			lightwall.draw();
-		}.bind(this));
 	}
 
 	/**
@@ -123,10 +165,18 @@ class Tron {
 	 * @returns 
 	 */
 	lightwallExistsAtPoint(coordinates) {
-		return this.lightwalls.filter(function (lightwall) {
-			return coordinates.x === lightwall.coordinates.x
-				&& coordinates.y === lightwall.coordinates.y;
-		}).length > 0;
+		var lightwallState = false;
+
+		this.players.forEach(function (player, playerID) {
+			if (lightwallState === true)
+				return;
+			lightwallState = player.lightwalls.filter(function (lightwall) {
+				return coordinates.x === lightwall.coordinates.x
+					&& coordinates.y === lightwall.coordinates.y;
+			}).length > 0;
+		});
+
+		return lightwallState;
 	}
 
 	/**
@@ -137,20 +187,36 @@ class Tron {
 	 * @returns 
 	 */
 	lightwallExistInArea(playerID, playerCoordinates, radius) {
-		return this.lightwalls.filter(function (lightwall) {
-			if (playerID === lightwall.ownerID)
-				return false;
+		var lightwallState = false;
+		this.players.forEach(function (player, playerID2) {
+			if (lightwallState === true)
+				return;
 
-			// Calculate the distance between the coordinates and the lightwall's coordinates
-			const dx = playerCoordinates.x - lightwall.coordinates.x;
-			const dy = playerCoordinates.y - lightwall.coordinates.y;
+			lightwallState = player.lightwalls.filter(function (lightwall, arrayIndex) {
+				if (arrayIndex >= player.lightwalls.length - 3)
+					return false;
+				// Optimization: Quick bounding box check
+				const dxQuick = Math.abs(playerCoordinates.x - lightwall.coordinates.x);
+				const dyQuick = Math.abs(playerCoordinates.y - lightwall.coordinates.y);
 
-			// Calculate the Euclidean distance
-			const distance = Math.sqrt((dx * dx) + (dy * dy));
+				if (dxQuick > radius + TRON.globals.LIGHTWALL_RADIUS || dyQuick > radius + TRON.globals.LIGHTWALL_RADIUS)
+					return false; // Definitely no collision
 
-			// Check if the lightwall is within the radius
-			return distance <= radius;
-		}).length > 0;
+				const dx = playerCoordinates.x - lightwall.coordinates.x;
+				const dy = playerCoordinates.y - lightwall.coordinates.y;
+
+				const distance = Math.sqrt((dx * dx) + (dy * dy));
+
+				const collisionThreshold = radius; // + Math.sqrt((TRON.globals.LIGHTWALL_RADIUS * TRON.globals.LIGHTWALL_RADIUS) + (TRON.globals.LIGHTWALL_RADIUS * TRON.globals.LIGHTWALL_RADIUS));
+
+				return distance <= collisionThreshold;
+			}).length > 0;
+		});
+
+		if (playerID === 1) {
+			console.log(lightwallState);
+		}
+		return lightwallState;
 	}
 }
 
@@ -162,6 +228,9 @@ class Player {
 		//Stores how far was moved in the last loop.
 		this.lastDistanceX;
 		this.lastDistanceY;
+		this.state;
+		this.lives = TRON.config.PLAYER_LIVES;
+		this.lightwalls = [];
 	}
 
 	/**
@@ -171,14 +240,20 @@ class Player {
 	}
 
 	handleCollision() {
-		this.wallCollision();
-		this.lightWallCollision();
+		if (this.wallCollision() === true
+			|| this.lightWallCollision() === true)
+			return true;
+		else
+			return false;
 	}
 
 	lightWallCollision() {
 		const playerAreaRadius = (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS);
 		const lightwallCollision = TRON.lightwallExistInArea(this.id, this.coordinates, playerAreaRadius);
 
+		if (this.id === 1) {
+			console.log(lightwallCollision);
+		}
 		if (lightwallCollision === true) {
 			TRON.screen.strokeStyle = "red";
 		}
@@ -187,28 +262,41 @@ class Player {
 		}
 		TRON.screen.rect((this.coordinates.x - (playerAreaRadius / 2)), (this.coordinates.y - (playerAreaRadius / 2)), playerAreaRadius, playerAreaRadius);
 		TRON.screen.stroke();
+
+		return lightwallCollision;
 	}
 
 	wallCollision() {
 		//X
-		if ((this.coordinates.x + TRON.globals.PLAYER_RADIUS) >= TRON.screen.canvas.width)
+		if ((this.coordinates.x + TRON.globals.PLAYER_RADIUS) >= TRON.screen.canvas.width) {
 			this.coordinates.x = (TRON.screen.canvas.width - TRON.globals.PLAYER_RADIUS);
-		else if (this.coordinates.x - TRON.globals.PLAYER_RADIUS <= 0)
+			return true;
+		}
+		else if (this.coordinates.x - TRON.globals.PLAYER_RADIUS <= 0) {
 			this.coordinates.x = TRON.globals.PLAYER_RADIUS;
+			return true;
+		}
 
 		//Y
-		if ((this.coordinates.y + TRON.globals.PLAYER_RADIUS) >= TRON.screen.canvas.height)
+		if ((this.coordinates.y + TRON.globals.PLAYER_RADIUS) >= TRON.screen.canvas.height) {
 			this.coordinates.y = (TRON.screen.canvas.height - TRON.globals.PLAYER_RADIUS);
-		else if (this.coordinates.y - TRON.globals.PLAYER_RADIUS <= 0)
+			return true;
+		}
+		else if (this.coordinates.y - TRON.globals.PLAYER_RADIUS <= 0) {
 			this.coordinates.y = TRON.globals.PLAYER_RADIUS;
+			return true;
+		};
 
-		this.coordinates = new Coordinates(this.coordinates.x, this.coordinates.y);
+		return false; //No collision
 	}
 
 	loop() {
 		// this.adjustConfiguration();
 		this.move();
-		this.handleCollision();
+		if (this.handleCollision() === true) {
+			this.state = 'collided';
+			--this.lives;
+		}
 		this.createLightwallPoint();
 		this.draw();
 	}
@@ -216,7 +304,7 @@ class Player {
 	createLightwallPoint() {
 		if (TRON.lightwallExistsAtPoint(this.coordinates) === true)
 			return;
-		TRON.lightwalls.push(new Lightwall(this.id, this.config, this.coordinates));
+		this.lightwalls.push(new Lightwall(this.id, this.config, this.coordinates));
 	}
 
 	move() {
@@ -239,22 +327,22 @@ class Player {
 
 		if (timestamps[mostRecentControl] > -1) {
 			if (mostRecentControl === 'upControl') {
-				this.coordinates.y -= TRON.globals.PLAYER_SPEED;
+				this.coordinates.y -= Math.trunc(TRON.globals.PLAYER_SPEED);
 				this.lastDistanceX = 0;
 				this.lastDistanceY = -TRON.globals.PLAYER_SPEED;
 			}
 			else if (mostRecentControl === 'leftControl') {
-				this.coordinates.x -= TRON.globals.PLAYER_SPEED;
+				this.coordinates.x -= Math.trunc(TRON.globals.PLAYER_SPEED);
 				this.lastDistanceX = -TRON.globals.PLAYER_SPEED;
 				this.lastDistanceY = 0;
 			}
 			else if (mostRecentControl === 'downControl') {
-				this.coordinates.y += TRON.globals.PLAYER_SPEED;
+				this.coordinates.y += Math.trunc(TRON.globals.PLAYER_SPEED);
 				this.lastDistanceX = 0;
 				this.lastDistanceY = TRON.globals.PLAYER_SPEED;
 			}
 			else if (mostRecentControl === 'rightControl') {
-				this.coordinates.x += TRON.globals.PLAYER_SPEED;
+				this.coordinates.x += Math.trunc(TRON.globals.PLAYER_SPEED);
 				this.lastDistanceX = TRON.globals.PLAYER_SPEED;
 				this.lastDistanceY = 0;
 			}
@@ -348,6 +436,6 @@ const PLAYER_CONFIGS = [
 ];
 
 //Game
-document.addEventListener("DOMContentLoaded", async function () {
+document.addEventListener("DOMContentLoaded", function () {
 	TRON = new Tron;
 });
