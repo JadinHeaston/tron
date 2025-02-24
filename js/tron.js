@@ -99,26 +99,29 @@ class Tron {
 		this.screen.restore();
 	}
 
-	calculatePolygonPoints(sides) {
-		// Calculate the center point of the window
+	calculatePolygonPoints(sides) { // Add spawnMargin parameter
 		const centerX = this.screen.canvas.width / 2;
 		const centerY = this.screen.canvas.height / 2;
 
-		// Calculate the general radius of the shape (just for visualization purposes)
-		const radius = Math.min(this.screen.canvas.width, this.screen.canvas.height) / 2; // Use smaller dimension
+		// Calculate available space for the polygon, accounting for the margin
+		const availableWidth = this.screen.canvas.width - 2 * this.config.SPAWN_MARGIN;
+		const availableHeight = this.screen.canvas.height - 2 * this.config.SPAWN_MARGIN;
+
+		// Calculate the radius based on the *available* space
+		const radius = Math.min(availableWidth, availableHeight) / 2;
+
+		// If the available width or height is negative (screen too small), prevent radius from being negative
+		const safeRadius = Math.max(0, radius); // radius should never be negative
 
 		var points = [];
-
-		// Calculate the angle between each point (360 degrees / number of sides)
 		const angleStep = (2 * Math.PI) / sides;
 
 		for (let i = 0; i < sides; ++i) {
-			// Calculate the angle for this point
 			const angle = angleStep * i;
 
-			// Calculate the x and y coordinates based on the angle and radius
-			const x = centerX + radius * Math.cos(angle);
-			const y = centerY + radius * Math.sin(angle);
+			// Center the polygon within the available space
+			const x = centerX + safeRadius * Math.cos(angle);
+			const y = centerY + safeRadius * Math.sin(angle);
 
 			points.push({ x: x, y: y });
 		}
@@ -213,9 +216,6 @@ class Tron {
 			}).length > 0;
 		});
 
-		if (playerID === 1) {
-			console.log(lightwallState);
-		}
 		return lightwallState;
 	}
 }
@@ -251,9 +251,6 @@ class Player {
 		const playerAreaRadius = (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS);
 		const lightwallCollision = TRON.lightwallExistInArea(this.id, this.coordinates, playerAreaRadius);
 
-		if (this.id === 1) {
-			console.log(lightwallCollision);
-		}
 		if (lightwallCollision === true) {
 			TRON.screen.strokeStyle = "red";
 		}
