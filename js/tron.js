@@ -121,12 +121,16 @@ class Tron {
 		this.gameState = 'playing'; //Updating game state.
 	}
 
-	lightwallExistsAtPoint(playerID, coordinates) {
+	/**
+	 * 
+	 * @param {*} playerID 
+	 * @param {Coordinates} coordinates 
+	 * @returns 
+	 */
+	lightwallExistsAtPoint(coordinates) {
 		return this.lightwalls.filter(function (lightwall) {
-			if (playerID === lightwall.ownerID)
-				return false;
-			coordinates.x == lightwall.coordinates.x
-				&& coordinates.y == lightwall.coordinates.y
+			return coordinates.x === lightwall.coordinates.x
+				&& coordinates.y === lightwall.coordinates.y;
 		}).length > 0;
 	}
 
@@ -195,6 +199,8 @@ class Player {
 			this.coordinates.y = (TRON.screen.canvas.height - TRON.globals.PLAYER_RADIUS);
 		else if (this.coordinates.y - TRON.globals.PLAYER_RADIUS <= 0)
 			this.coordinates.y = TRON.globals.PLAYER_RADIUS;
+
+		this.coordinates = new Coordinates(this.coordinates.x, this.coordinates.y);
 	}
 
 	loop() {
@@ -206,7 +212,7 @@ class Player {
 	}
 
 	createLightwallPoint() {
-		if (TRON.lightwallExistsAtPoint(this.id, this.coordinates) === true)
+		if (TRON.lightwallExistsAtPoint(this.coordinates) === true)
 			return;
 		TRON.lightwalls.push(new Lightwall(this.id, this.config, this.coordinates));
 	}
