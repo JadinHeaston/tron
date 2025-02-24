@@ -114,11 +114,6 @@ class Tron {
 		this.lightwalls.forEach(async function (lightwall, lightwallIndex) {
 			lightwall.draw();
 		}.bind(this));
-
-		//Starting the loop again.
-		window.requestAnimationFrame(this.loop);
-
-		this.gameState = 'playing'; //Updating game state.
 	}
 
 	/**
@@ -134,17 +129,24 @@ class Tron {
 		}).length > 0;
 	}
 
-	lightwallExistInArea(playerID, coordinates, radius) {
+	/**
+	 * 
+	 * @param {*} playerID 
+	 * @param {Coordinates}} playerCoordinates 
+	 * @param {*} radius 
+	 * @returns 
+	 */
+	lightwallExistInArea(playerID, playerCoordinates, radius) {
 		return this.lightwalls.filter(function (lightwall) {
 			if (playerID === lightwall.ownerID)
 				return false;
 
 			// Calculate the distance between the coordinates and the lightwall's coordinates
-			const dx = coordinates.x - lightwall.coordinates.x;
-			const dy = coordinates.y - lightwall.coordinates.y;
+			const dx = playerCoordinates.x - lightwall.coordinates.x;
+			const dy = playerCoordinates.y - lightwall.coordinates.y;
 
 			// Calculate the Euclidean distance
-			const distance = Math.sqrt(dx * dx + dy * dy);
+			const distance = Math.sqrt((dx * dx) + (dy * dy));
 
 			// Check if the lightwall is within the radius
 			return distance <= radius;
@@ -174,16 +176,16 @@ class Player {
 	}
 
 	lightWallCollision() {
-		const playerAreaRadius = ((TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS) * 2);
-		const playerCenter = new Coordinates((this.coordinates.x - (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS)), (this.coordinates.y - (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS)));
-		const lightwallCollision = TRON.lightwallExistInArea(this.id, playerCenter, playerAreaRadius);
+		const playerAreaRadius = (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS);
+		const lightwallCollision = TRON.lightwallExistInArea(this.id, this.coordinates, playerAreaRadius);
 
 		if (lightwallCollision === true) {
-			TRON.screen.fillStyle = "purple";
-			TRON.screen.fillRect(0, 0, TRON.screen.width, TRON.screen.height);
+			TRON.screen.strokeStyle = "red";
 		}
-		TRON.screen.rect(playerCenter.x, playerCenter.y, playerAreaRadius, playerAreaRadius);
-		TRON.screen.strokeStyle = "green";
+		else {
+			TRON.screen.strokeStyle = "green";
+		}
+		TRON.screen.rect((this.coordinates.x - (playerAreaRadius / 2)), (this.coordinates.y - (playerAreaRadius / 2)), playerAreaRadius, playerAreaRadius);
 		TRON.screen.stroke();
 	}
 
