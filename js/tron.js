@@ -71,6 +71,15 @@ class Tron {
 			document.getElementById('game-start-screen').style.display = 'none';
 			TRON.initializeGameState();
 		});
+
+		document.getElementById('options').addEventListener('click', async function () {
+			const optionsContainer = document.getElementById('game-options-options');
+			const optionsInputs = TRON.config.generateOptionInputs();
+			optionsContainer.innerHTML = '';
+			optionsInputs.forEach(function (optionInput) {
+				optionsContainer.appendChild(optionInput);
+			});
+		});
 	}
 
 	adjustGlobals() {
