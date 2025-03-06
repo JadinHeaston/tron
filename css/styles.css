@@ -86,7 +86,10 @@ main {
 }
 
 #game-screen {
-	background-color: var(--opposite-font-color);
+	background-image: url("/assets/game-background-tile.svg");
+	background-position: center center;
+	background-repeat: repeat;
+	background-size: 2.5vw;
 }
 
 header,
