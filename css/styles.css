@@ -56,6 +56,10 @@ label.required::after {
 	user-select: none;
 }
 
+.hidden {
+	display: none !important;
+}
+
 :root {
 	--header-height: 5vh;
 }
@@ -114,4 +118,10 @@ nav {
 		list-style: none;
 		padding: 0;
 	}
+}
+
+#round-countdown {
+	position: absolute;
+	bottom: calc(50% - 2.75rem);
+	font-size: 5rem;
 }

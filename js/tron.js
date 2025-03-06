@@ -2,6 +2,8 @@
 var TRON;
 
 class Tron {
+	#roundDelay = 5000; //ms
+
 	constructor() {
 		this.gameState = null;
 		this.config = new TronConfig; //User Configurable Options
@@ -26,55 +28,92 @@ class Tron {
 		window.requestAnimationFrame(this.loop);
 	}
 
-	initializeGameState() {
+	startGame() {
+		document.getElementById('game-start-screen').classList.add('hidden');
 		this.initializePlayers();
-
 		this.initializeRound(); //Starting first round.
 	}
 
+	endGame() {
+		this.gameState = null;
+		document.getElementById('game-start-screen').classList.remove('hidden');
+	}
+
 	initializePlayers() {
+		this.players = [];
 		for (let index = 0; index < this.config.PLAYER_COUNT; ++index) {
 			this.players.push(new Player(index, PLAYER_CONFIGS[index]));
 		}
 	}
 
 	initializeStartingPositions() {
-		this.startingPoints = this.calculatePolygonPoints(this.players.length);
+		if (this.startingPoints.length === 0)
+			this.startingPoints = this.calculatePolygonPoints(this.players.length);
 		this.players.forEach(async function (player, playerID) {
 			player.coordinates = new Coordinates(this.startingPoints[playerID].x, this.startingPoints[playerID].y);
 		}.bind(this));
 	}
 
 	initializeRound() {
+		this.gameState = null;
+
+		this.keyManager.reset();
+
+		//Resetting player info.
 		this.initializeStartingPositions();
-		this.gameState = 'playing';
+		this.players.forEach(async function (player) {
+			player.roundReset();
+		});
+
+		//Starting timer for round start.
+		setTimeout(() => {
+			this.gameState = 'playing';
+		}, this.#roundDelay);
+
+		//Handling visual countdown.
+		const roundCountdown = document.getElementById('round-countdown');
+		roundCountdown.classList.remove('hidden');
+		var currentCountdownTime = this.#roundDelay / 1000;
+
+		//Showing initial countdown.
+		roundCountdown.innerText = currentCountdownTime;
+
+		var countdown = setInterval(function () {
+			--currentCountdownTime;
+			if (currentCountdownTime <= 0) {
+				roundCountdown.classList.add('hidden');
+				clearInterval(countdown);
+			}
+			else
+				roundCountdown.innerText = currentCountdownTime; //Converting delay to seconds.
+		}, 1000);
 	}
 
+
 	setupEventListeners() {
-		window.addEventListener('keydown', async function (event) {
-			if (TRON.gameState !== 'playing')
+		window.addEventListener('keydown', async (event) => {
+			if (this.gameState !== 'playing')
+				return;
+			else if (this.keyManager.isKeyPressed(event.key) !== false)
 				return;
 
-			else if (TRON.keyManager.isKeyPressed(event.key) !== false)
-				return;
-
-			TRON.keyManager.keyDown(event.key);
+			this.keyManager.keyDown(event.key);
 		})
-		window.addEventListener('keyup', async function (event) {
-			if (TRON.gameState !== 'playing')
+		window.addEventListener('keyup', async (event) => {
+			if (this.gameState !== 'playing')
 				return;
-			TRON.keyManager.keyUp(event.key);
+
+			this.keyManager.keyUp(event.key);
 		});
 
 		//Listening to menu buttons
-		document.getElementById('start-game').addEventListener('click', async function () {
-			document.getElementById('game-start-screen').style.display = 'none';
-			TRON.initializeGameState();
+		document.getElementById('start-game').addEventListener('click', async () => {
+			this.startGame();
 		});
 
-		document.getElementById('options').addEventListener('click', async function () {
+		document.getElementById('options').addEventListener('click', async () => {
 			const optionsContainer = document.getElementById('game-options-options');
-			const optionsInputs = TRON.config.generateOptionInputs();
+			const optionsInputs = this.config.generateOptionInputs();
 			optionsContainer.innerHTML = '';
 			optionsInputs.forEach(function (optionInput) {
 				optionsContainer.appendChild(optionInput);
@@ -141,8 +180,13 @@ class Tron {
 	loop = (dt) => {
 		this.clearScreen();
 
-		if (this.gameState === 'playing') {
-			this.playing();
+		this.playing();
+
+		if (this.gameState === 'round-end') {
+			this.initializeRound();
+		}
+		else if (this.gameState === 'game-end') {
+			this.endGame();
 		}
 
 		//Starting the loop again.
@@ -153,21 +197,20 @@ class Tron {
 		// drawHeader();
 
 		//Handling players
-		this.players.forEach(function (player, playerID) {
+		this.players.forEach(function (player) {
 			player.loop();
-			if (player.state === 'collided') {
+			if (this.gameState !== null && player.state === 'collided') {
 				if (player.lives > 0)
-					TRON.gameState = 'round-end';
+					this.gameState = 'round-end';
 				else
-					TRON.gameState = 'game-end';
+					this.gameState = 'game-end';
 			}
 
 			//Handling lightwalls
-			player.lightwalls.forEach(function (lightwall, lightwallIndex) {
+			player.lightwalls.forEach(function (lightwall) {
 				lightwall.draw();
 			}.bind(this));
 		}.bind(this));
-
 	}
 
 	/**
@@ -179,7 +222,7 @@ class Tron {
 	lightwallExistsAtPoint(coordinates) {
 		var lightwallState = false;
 
-		this.players.forEach(function (player, playerID) {
+		this.players.forEach(function (player) {
 			if (lightwallState === true)
 				return;
 			lightwallState = player.lightwalls.filter(function (lightwall) {
@@ -200,7 +243,7 @@ class Tron {
 	 */
 	lightwallExistInArea(playerID, playerCoordinates, radius) {
 		var lightwallState = false;
-		this.players.forEach(function (player, playerID2) {
+		this.players.forEach(function (player) {
 			if (lightwallState === true)
 				return;
 
@@ -237,8 +280,13 @@ class Player {
 		//Stores how far was moved in the last loop.
 		this.lastDistanceX;
 		this.lastDistanceY;
-		this.state;
+		this.state = null;
 		this.lives = TRON.config.PLAYER_LIVES;
+		this.lightwalls = [];
+	}
+
+	roundReset() {
+		this.state = null;
 		this.lightwalls = [];
 	}
 
@@ -417,6 +465,10 @@ class KeyManager {
 			return false;
 
 		return this.keys.get(key).time;
+	}
+
+	reset() {
+		this.keys = new Map();
 	}
 }
 
