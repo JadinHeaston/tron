@@ -17,10 +17,10 @@ class TronConfig {
 		},
 		PLAYER_COUNT: {
 			type: 'range',
-			disabled: false,
+			disabled: true,
 			displayValue: true,
-			min: 1,
-			max: 3,
+			min: 2,
+			max: 2,
 			step: 1,
 		},
 		PLAYER_LIVES: {
