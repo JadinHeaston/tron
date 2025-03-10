@@ -20,7 +20,6 @@ class Tron {
 
 		//Initial setting variables.
 		this.adjustScreen();
-		this.adjustGlobals();
 
 		this.gameState = 'start-screen'; //Starting game on the start screen.
 
@@ -177,7 +176,8 @@ class Tron {
 		return points;
 	}
 
-	loop = (dt) => {
+	loop = () => {
+		this.adjustGlobals();
 		this.clearScreen();
 
 		this.playing();
@@ -236,12 +236,11 @@ class Tron {
 
 	/**
 	 * 
-	 * @param {*} playerID 
 	 * @param {Coordinates}} playerCoordinates 
 	 * @param {*} radius 
 	 * @returns 
 	 */
-	lightwallExistInArea(playerID, playerCoordinates, radius) {
+	lightwallExistInArea(playerCoordinates, radius) {
 		var lightwallState = false;
 		this.players.forEach(function (player) {
 			if (lightwallState === true)
@@ -306,7 +305,7 @@ class Player {
 
 	lightWallCollision() {
 		const playerAreaRadius = (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS);
-		const lightwallCollision = TRON.lightwallExistInArea(this.id, this.coordinates, playerAreaRadius);
+		const lightwallCollision = TRON.lightwallExistInArea(this.coordinates, playerAreaRadius);
 
 		if (lightwallCollision === true) {
 			TRON.screen.strokeStyle = "red";
@@ -380,25 +379,21 @@ class Player {
 		);
 
 		if (timestamps[mostRecentControl] > -1) {
-			if (mostRecentControl === 'upControl') {
-				this.coordinates.y -= Math.trunc(TRON.globals.PLAYER_SPEED);
-				this.lastDistanceX = 0;
-				this.lastDistanceY = -TRON.globals.PLAYER_SPEED;
-			}
-			else if (mostRecentControl === 'leftControl') {
-				this.coordinates.x -= Math.trunc(TRON.globals.PLAYER_SPEED);
-				this.lastDistanceX = -TRON.globals.PLAYER_SPEED;
+			const directionPositive = (mostRecentControl === 'downControl') || (mostRecentControl === 'rightControl');
+			const movementDistance = Math.trunc(TRON.globals.PLAYER_SPEED);
+			const distance = (directionPositive === true ? movementDistance : movementDistance * -1);
+
+			const directionX = (mostRecentControl === 'leftControl') || (mostRecentControl === 'rightControl');
+
+			if (directionX === true) {
+				this.coordinates.x = this.coordinates.x + distance;
 				this.lastDistanceY = 0;
+				this.lastDistanceX = distance;
 			}
-			else if (mostRecentControl === 'downControl') {
-				this.coordinates.y += Math.trunc(TRON.globals.PLAYER_SPEED);
+			else {
+				this.coordinates.y = this.coordinates.y + distance;
 				this.lastDistanceX = 0;
-				this.lastDistanceY = TRON.globals.PLAYER_SPEED;
-			}
-			else if (mostRecentControl === 'rightControl') {
-				this.coordinates.x += Math.trunc(TRON.globals.PLAYER_SPEED);
-				this.lastDistanceX = TRON.globals.PLAYER_SPEED;
-				this.lastDistanceY = 0;
+				this.lastDistanceY = distance;
 			}
 		}
 	}
