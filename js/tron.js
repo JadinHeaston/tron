@@ -116,13 +116,17 @@ class Tron {
 			optionsContainer.innerHTML = '';
 			optionsInputs.forEach(function (optionInput) {
 				optionsContainer.appendChild(optionInput);
+				optionInput.addEventListener('change', async function (event) {
+					const input = event.target;
+					TRON.config[input.name] = parseInt(input.value);
+				});
 			});
 		});
 	}
 
 	adjustGlobals() {
 		this.globals.PLAYER_RADIUS = Math.trunc((this.screen.canvas.width / this.config.PLAYER_RADIUS_FACTOR));
-		this.globals.PLAYER_SPEED = Math.trunc((this.screen.canvas.width / this.config.PLAYER_SPEED_FACTOR));
+		this.globals.PLAYER_SPEED = this.globals.PLAYER_RADIUS;
 		this.globals.LIGHTWALL_RADIUS = Math.trunc(this.globals.PLAYER_SPEED * 1.1); //Adding slight padding to "connect" the points for a smooth wall.
 	}
 
