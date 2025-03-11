@@ -9,6 +9,8 @@ class Tron {
 		this.config = new TronConfig; //User Configurable Options
 		this.globals = new TronGlobal; //Global changing variables
 
+
+		// this.peer = new Peer();
 		this.players = [];
 		this.startingPoints = [];
 
@@ -495,4 +497,14 @@ const PLAYER_CONFIGS = [
 //Game
 document.addEventListener("DOMContentLoaded", function () {
 	TRON = new Tron;
+
+	// console.log(TRON.peer);
+	// // TRON.peer = ;
+
+	// updatePeerCurrentID();
 });
+
+// async function updatePeerCurrentID() {
+// 	const container = document.getElementById('game-peer-current-id');
+// 	container.innerText = TRON.peer._id;
+// }
