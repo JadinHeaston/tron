@@ -1,55 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 
-	<head>
-		<meta charset="UTF-8">
-		<title>Tron</title>
-		<meta name="viewport" content="width=device-width,initial-scale=1">
-		<link rel="icon" type="image/svg+xml" href="favicon.svg">
-		<link rel="preload" as="style" href="css/styles.css">
-		<link rel="stylesheet" href="css/styles.css">
-		<!-- <script src="vendor/peerjs/1.5.4/peerjs.min.js"></script> -->
-		<script src="js/config.js" type="text/javascript"></script>
-		<script src="js/tron.js" type="text/javascript"></script>
-	</head>
+<head>
+	<meta charset="UTF-8">
+	<title>Tron</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="icon" type="image/svg+xml" href="favicon.svg">
+	<link rel="preload" as="style" href="css/styles.css">
+	<link rel="stylesheet" href="css/styles.css">
+	<!-- <script src="vendor/peerjs/1.5.4/peerjs.min.js"></script> -->
+	<script src="js/config.js" type="text/javascript"></script>
+	<script src="js/tron.js" type="text/javascript"></script>
+</head>
 
-	<body>
-		<header>
-			<h1>Tron</h1>
-			<nav>
-				<div id="game-start-screen">
-					<ul>
-						<li>
-							<button type="button" id="start-game">Start</button>
-						</li>
-						<li>
-							<button type="button" id="options">Options</button>
-						</li>
-					</ul>
-				</div>
-			</nav>
-			<div id="game-options-screen">
-				<form id="game-options-options">
-
-				</form>
+<body>
+	<header>
+		<h1>Tron</h1>
+		<nav>
+			<div id="game-start-screen">
+				<ul>
+					<li>
+						<button type="button" id="start-game">Start</button>
+					</li>
+					<li>
+						<button type="button" id="options">Options</button>
+					</li>
+				</ul>
 			</div>
-			<!-- <div id="game-peer-screen">
+		</nav>
+		<div id="game-options-screen">
+			<form id="game-options-options">
+
+			</form>
+		</div>
+		<!-- <div id="game-peer-screen">
 				<div id="game-peer-current-id"></div>
 				<form id="game-peer-options">
 
 				</form>
 			</div> -->
-		</header>
 
-		<main>
-			<div id="score-board"></div>
-			<div id="round-countdown" class="no-text-select"></div>
-			<canvas id="game-screen"></canvas>
-		</main>
+		<div id="score-board"></div>
+	</header>
 
-		<footer>
+	<main>
+		<div id="round-countdown" class="no-text-select"></div>
+		<canvas id="game-screen"></canvas>
+	</main>
 
-		</footer>
-	</body>
+	<footer>
+
+	</footer>
+</body>
 
 </html>

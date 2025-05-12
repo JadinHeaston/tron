@@ -1,6 +1,14 @@
 "use strict"
 var TRON;
 
+const GAME_STATES = Object.freeze({
+	START: true,
+	PLAY: true,
+	ROUND_START: true,
+	ROUND_END: true,
+	GAME_END: true
+});
+
 class Tron {
 	#roundDelay = 5000; //ms
 
@@ -23,7 +31,7 @@ class Tron {
 		//Initial setting variables.
 		this.adjustScreen();
 
-		this.gameState = 'start-screen'; //Starting game on the start screen.
+		// this.changeGameState(GAME_STATES.START); //Starting game on the start screen.
 
 		//Beginning game loop.
 		window.requestAnimationFrame(this.loop);
@@ -36,8 +44,30 @@ class Tron {
 	}
 
 	endGame() {
-		this.gameState = null;
+		this.changeGameState(GAME_STATES.GAME_END);
 		document.getElementById('game-start-screen').classList.remove('hidden');
+	}
+
+	changeGameState(newGameState) {
+		this.gameState = newGameState;
+
+		this.updateScoreboard();
+	}
+
+	updateScoreboard() {
+		var scoreBoard = document.getElementById('score-board');
+		scoreBoard.innerHTML = ''; // Clearing existing content.
+
+
+		const playerLivesList = document.createElement('ul');
+		this.players.forEach(function (player) {
+			const playerLives = document.createElement('li');
+			playerLives.setAttribute("player-color", player.config.color);
+			playerLives.textContent = player.lives;
+			playerLivesList.appendChild(playerLives);
+		});
+
+		scoreBoard.appendChild(playerLivesList);
 	}
 
 	initializePlayers() {
@@ -56,7 +86,7 @@ class Tron {
 	}
 
 	initializeRound() {
-		this.gameState = null;
+		this.changeGameState(GAME_STATES.ROUND_START);
 
 		this.keyManager.reset();
 
@@ -68,7 +98,7 @@ class Tron {
 
 		//Starting timer for round start.
 		setTimeout(() => {
-			this.gameState = 'playing';
+			this.changeGameState(GAME_STATES.PLAYING);
 		}, this.#roundDelay);
 
 		//Handling visual countdown.
@@ -93,7 +123,7 @@ class Tron {
 
 	setupEventListeners() {
 		window.addEventListener('keydown', async (event) => {
-			if (this.gameState !== 'playing')
+			if (this.gameState !== GAME_STATES.PLAYING)
 				return;
 			else if (this.keyManager.isKeyPressed(event.key) !== false)
 				return;
@@ -101,7 +131,7 @@ class Tron {
 			this.keyManager.keyDown(event.key);
 		})
 		window.addEventListener('keyup', async (event) => {
-			if (this.gameState !== 'playing')
+			if (this.gameState !== GAME_STATES.PLAYING)
 				return;
 
 			this.keyManager.keyUp(event.key);
@@ -367,6 +397,9 @@ class Player {
 	}
 
 	move() {
+		if (TRON.gameState === GAME_STATES.PLAY)
+			return;
+
 		const upControl = TRON.keyManager.isKeyPressed(this.config.upControl);
 		const leftControl = TRON.keyManager.isKeyPressed(this.config.leftControl);
 		const downControl = TRON.keyManager.isKeyPressed(this.config.downControl);
@@ -508,3 +541,10 @@ document.addEventListener("DOMContentLoaded", function () {
 // 	const container = document.getElementById('game-peer-current-id');
 // 	container.innerText = TRON.peer._id;
 // }
+
+
+
+
+
+
+

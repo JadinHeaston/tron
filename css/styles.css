@@ -107,6 +107,27 @@ nav {
 	width: 100vw;
 }
 
+#score-board {
+	position: absolute;
+	height: var(--header-height);
+	width: 100%;
+
+	&>ul {
+		display: flex;
+		align-items: center;
+		justify-content: space-around;
+		height: 100%;
+		list-style: none;
+		font-size: 1.1em;
+		margin: 0;
+		padding: 0;
+
+		&>li {
+			background-color: attr(player-color type(<color>));
+		}
+	}
+}
+
 #game-start-screen {
 	display: flex;
 	flex-grow: 1;
