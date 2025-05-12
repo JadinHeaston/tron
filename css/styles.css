@@ -10,6 +10,7 @@
 	--fifth-background-color: light-dark(#969696, #696969);
 	--sixth-background-color: light-dark(#7a7a7a, #858585);
 
+	--header-height: 5vh;
 	--main-height: 90vh;
 	--default-transition-duration: 300ms;
 }
@@ -60,10 +61,6 @@ label.required::after {
 	display: none !important;
 }
 
-:root {
-	--header-height: 5vh;
-}
-
 input[type="button"],
 button {
 	cursor: pointer;
@@ -76,8 +73,15 @@ body {
 }
 
 header {
-	height: 5vh;
+	height: var(--header-height);
 	position: absolute;
+
+	&>h1 {
+		height: var(--header-height);
+		display: flex;
+		align-items: center;
+		margin: 0;
+	}
 }
 
 body,
