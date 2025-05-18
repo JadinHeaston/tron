@@ -328,18 +328,15 @@ class Player {
 		const movementDistance = Math.trunc(TRON.globals.PLAYER_SPEED);
 		const relativeX = Math.abs(((this.coordinates.x / TRON.screen.canvas.width) * 100) - 50);
 		const relativeY = Math.abs(((this.coordinates.y / TRON.screen.canvas.height) * 100) - 50);
-		console.log(this.coordinates, relativeX, relativeY);
 		if (relativeX >= relativeY) {
 			const directionPositive = (this.coordinates.x <= (TRON.screen.canvas.width / 2));
 			const distance = (directionPositive === true ? movementDistance : movementDistance * -1);
 			this.lastDistanceX = distance;
-			console.log(this);
 		}
 		else {
 			const directionPositive = (this.coordinates.y <= (TRON.screen.canvas.height / 2));
 			const distance = (directionPositive === true ? movementDistance : movementDistance * -1);
 			this.lastDistanceY = distance;
-			console.log(this);
 		}
 	}
 
