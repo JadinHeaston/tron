@@ -1,6 +1,9 @@
 "use strict"
 var TRON;
 
+const DEBUG = false;
+const DEBUG_SHOW_HITBOXES = true;
+
 const GAME_STATES = Object.freeze({
 	START: true,
 	PLAY: true,
@@ -358,15 +361,17 @@ class Player {
 		const playerAreaRadius = (TRON.globals.PLAYER_RADIUS + TRON.globals.LIGHTWALL_RADIUS);
 		const lightwallCollision = TRON.lightwallExistInArea(this.coordinates, playerAreaRadius);
 
-		if (lightwallCollision === true) {
-			TRON.screen.strokeStyle = "red";
-		}
-		else {
-			TRON.screen.strokeStyle = "green";
-		}
-		TRON.screen.rect((this.coordinates.x - (playerAreaRadius / 2)), (this.coordinates.y - (playerAreaRadius / 2)), playerAreaRadius, playerAreaRadius);
-		TRON.screen.stroke();
 
+		if (DEBUG === true && DEBUG_SHOW_HITBOXES === true) {
+			if (lightwallCollision === true) {
+				TRON.screen.strokeStyle = "red";
+			}
+			else {
+				TRON.screen.strokeStyle = "green";
+			}
+			TRON.screen.rect((this.coordinates.x - (playerAreaRadius / 2)), (this.coordinates.y - (playerAreaRadius / 2)), playerAreaRadius, playerAreaRadius);
+			TRON.screen.stroke();
+		}
 		return lightwallCollision;
 	}
 
