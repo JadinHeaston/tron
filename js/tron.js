@@ -400,7 +400,7 @@ class Player {
 	loop() {
 		// this.adjustConfiguration();
 		this.move();
-		if (this.handleCollision() === true) {
+		if (this.state !== 'collided' && this.handleCollision() === true) {
 			this.state = 'collided';
 			--this.lives;
 		}
